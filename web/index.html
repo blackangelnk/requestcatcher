@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Request catcher</title>
+<link rel="stylesheet" href="https://unpkg.com/chota@latest">
+</head>
+<body>
+    {{with .}}
+    <table class="striped">
+        <tr>
+            <th>Time</th>
+            <th>Url</th>
+            <th>Method</th>
+            <th>Body</th>
+            <th>Content Length</th>
+            <th>Remote address</th>
+            <th>Headers</th>
+        </tr>
+        {{range .}}
+        <tr>
+            <td>{{.Time.String}}</td>
+            <td>{{.Url}}</td>
+            <td>{{.Method}} </td>
+            <td>{{.Body}}</td>
+            <td>{{.ContentLength}}</td>
+            <td>{{.RemoteAddr}}</td>
+            <td>
+            {{with .ParsedHeaders}}
+                {{ range $key, $values := . }}
+                    <strong>{{$key}}</strong> : {{range $values}} {{.}}  {{end}}<br>
+                {{end}}
+            {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+        <p>No requests yet</p>
+    {{end}}
+</body>
+</html>
