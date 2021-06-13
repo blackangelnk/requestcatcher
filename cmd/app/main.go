@@ -9,14 +9,15 @@ import (
 
 	"github.com/blackangelnk/requestcatcher/internal/app"
 	"github.com/blackangelnk/requestcatcher/internal/config"
+	"github.com/blackangelnk/requestcatcher/internal/storage"
 	"github.com/jmoiron/sqlx"
 )
 
 func main() {
 	cfg := config.Init()
 
-	db := sqlx.MustOpen("sqlite3", ":memory:")
-	app := app.NewApp(cfg, db)
+	s := storage.NewDb(sqlx.MustOpen("sqlite3", ":memory:"))
+	app := app.NewApp(cfg, s)
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	ctx := context.Background()

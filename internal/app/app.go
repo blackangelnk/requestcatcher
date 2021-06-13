@@ -8,37 +8,24 @@ import (
 	"github.com/blackangelnk/requestcatcher/internal/catcher"
 	"github.com/blackangelnk/requestcatcher/internal/client"
 	"github.com/blackangelnk/requestcatcher/internal/config"
-	"github.com/jmoiron/sqlx"
+	"github.com/blackangelnk/requestcatcher/internal/request"
+	"github.com/blackangelnk/requestcatcher/internal/storage"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type App struct {
 	Client  *client.Client
-	DB      *sqlx.DB
+	Storage storage.Storage
 	Catcher *catcher.Catcher
 }
 
-func NewApp(cfg *config.Configuration, db *sqlx.DB) *App {
+func NewApp(cfg *config.Configuration, s storage.Storage) *App {
 	app := &App{
-		Client:  client.NewClient(cfg, db),
-		DB:      db,
-		Catcher: catcher.NewCatcher(cfg, db),
+		Client:  client.NewClient(cfg, s),
+		Storage: s,
+		Catcher: catcher.NewCatcher(cfg),
 	}
-	app.initDB()
 	return app
-}
-
-func (a *App) initDB() {
-	a.DB.MustExec(`CREATE TABLE IF NOT EXISTS request (
-		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-		"created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		"url" TEXT,
-		"headers" TEXT,
-		"body" TEXT,
-		"method" TEXT,
-		"remote_addr" TEXT,
-		"content_length" INTEGER
-	)`)
 }
 
 func (a *App) Run() {
@@ -54,6 +41,13 @@ func (a *App) Run() {
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatal("Error while running client", err)
 			panic(err)
+		}
+	}()
+	go func() {
+		var cr *request.CaughtRequest
+		for {
+			cr = <-a.Catcher.Broadcast
+			a.Storage.Save(*cr)
 		}
 	}()
 }

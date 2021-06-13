@@ -10,48 +10,37 @@ import (
 	"time"
 
 	"github.com/blackangelnk/requestcatcher/internal/config"
-	"github.com/jmoiron/sqlx"
+	"github.com/blackangelnk/requestcatcher/internal/request"
 )
 
 type Catcher struct {
-	db     *sqlx.DB
-	Server *http.Server
+	Server    *http.Server
+	Broadcast chan *request.CaughtRequest
 }
 
-type CaughtRequest struct {
-	Id            int64
-	Time          time.Time `db:"created_at"`
-	Method        string    `db:"method"`
-	ContentLength int64     `db:"content_length"`
-	RemoteAddr    string    `db:"remote_addr"`
-	Url           string    `db:"url"`
-	Headers       string    `db:"headers"`
-	Body          string    `db:"body"`
-}
-
-func NewCatcher(cfg *config.Configuration, db *sqlx.DB) *Catcher {
+func NewCatcher(cfg *config.Configuration) *Catcher {
 	mux := http.NewServeMux()
 	c := &Catcher{
-		db: db,
 		Server: &http.Server{
 			Addr:    ":" + strconv.Itoa(cfg.CatcherPort),
 			Handler: mux,
 		},
+		Broadcast: make(chan *request.CaughtRequest),
 	}
 	mux.HandleFunc("/", c.handler)
 	return c
 }
 
 func (c *Catcher) handler(w http.ResponseWriter, r *http.Request) {
-	_, err := c.Catch(r)
+	cr, err := c.Catch(r)
 	if err != nil {
 		log.Fatal("Failed to catch request", err)
+	} else {
+		c.Broadcast <- cr
 	}
 }
 
-func (c *Catcher) Catch(r *http.Request) (*CaughtRequest, error) {
-	q := `INSERT INTO request (url, method, content_length, remote_addr, headers, body)
-	 VALUES(:url,:method,:content_length,:remote_addr,:headers,:body)`
+func (c *Catcher) Catch(r *http.Request) (*request.CaughtRequest, error) {
 	headers, err := json.Marshal(r.Header)
 	if err != nil {
 		return nil, err
@@ -60,7 +49,7 @@ func (c *Catcher) Catch(r *http.Request) (*CaughtRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	cr := &CaughtRequest{
+	cr := &request.CaughtRequest{
 		Url:           r.URL.String(),
 		Time:          time.Now(),
 		Method:        r.Method,
@@ -69,11 +58,6 @@ func (c *Catcher) Catch(r *http.Request) (*CaughtRequest, error) {
 		Body:          string(body),
 		Headers:       string(headers),
 	}
-	res, err := c.db.NamedExec(q, cr)
-	if err != nil {
-		return nil, err
-	}
-	cr.Id, _ = res.LastInsertId()
 	return cr, nil
 }
 

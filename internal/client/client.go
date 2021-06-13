@@ -2,39 +2,24 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 	"text/template"
 
-	"github.com/blackangelnk/requestcatcher/internal/catcher"
 	"github.com/blackangelnk/requestcatcher/internal/config"
-	"github.com/jmoiron/sqlx"
+	"github.com/blackangelnk/requestcatcher/internal/storage"
 )
 
 type Client struct {
-	Server *http.Server
-	db     *sqlx.DB
+	Server  *http.Server
+	Storage storage.Storage
 }
 
-type VRequest struct {
-	catcher.CaughtRequest
-}
-
-func (v *VRequest) ParsedHeaders() map[string][]string {
-	var headers map[string][]string
-	err := json.Unmarshal([]byte(v.Headers), &headers)
-	if err != nil {
-		log.Print("Failed to unmarshal headers json", err)
-	}
-	return headers
-}
-
-func NewClient(cfg *config.Configuration, db *sqlx.DB) *Client {
+func NewClient(cfg *config.Configuration, s storage.Storage) *Client {
 	mux := http.NewServeMux()
 	c := &Client{
-		db: db,
+		Storage: s,
 		Server: &http.Server{
 			Addr:    ":" + strconv.Itoa(cfg.ClientPort),
 			Handler: mux,
@@ -45,8 +30,7 @@ func NewClient(cfg *config.Configuration, db *sqlx.DB) *Client {
 }
 
 func (c *Client) handler(w http.ResponseWriter, r *http.Request) {
-	var requests []VRequest
-	err := c.db.Select(&requests, "SELECT * FROM request ORDER BY id DESC;")
+	requests, err := c.Storage.Get()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Print("Failed to select requests from database", err)
