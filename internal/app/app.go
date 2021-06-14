@@ -47,7 +47,8 @@ func (a *App) Run() {
 		var cr *request.CaughtRequest
 		for {
 			cr = <-a.Catcher.Broadcast
-			a.Storage.Save(*cr)
+			go a.Storage.Save(*cr)
+			go func(cr *request.CaughtRequest) { a.Client.Notificator.Send <- cr }(cr)
 		}
 	}()
 }

@@ -3,10 +3,40 @@
 <head>
 <title>Request catcher</title>
 <link rel="stylesheet" href="https://unpkg.com/chota@latest">
+<script>
+    function connect() {
+        var protocol = "wss://";
+        if (window.location.protocol === "http:") {
+            protocol = "ws://";
+        }
+        const conn = new WebSocket(protocol + window.location.host + "/ws")
+        conn.onmessage = function(event) {
+            var request = JSON.parse(event.data);
+            var tbodyRef = document.getElementById('requests').getElementsByTagName('tbody')[0];
+            var row = tbodyRef.insertRow(0);
+            fields = ["created_at", "url", "method", "body", "content_length", "remote_addr", "headers"];
+            for (let field of fields) {
+                let cell = row.insertCell();
+                let cellBody
+                if (field == 'headers') {
+                    headers = JSON.parse(request[field])
+                    for (let key in headers) {
+                        cell.innerHTML += '<strong>' + key + '</strong> : ' + headers[key] + "<br>"
+                    }
+                } else {
+                    cell.appendChild(document.createTextNode(request[field]));
+                }
+            }
+        }
+    }
+    if (window.WebSocket) {
+        connect();
+    }
+</script>
 </head>
 <body>
-    {{with .}}
-    <table class="striped">
+    <table class="striped" id="requests">
+    <thead>
         <tr>
             <th>Time</th>
             <th>Url</th>
@@ -16,6 +46,9 @@
             <th>Remote address</th>
             <th>Headers</th>
         </tr>
+    </thead>
+    <tbody>
+    {{with .}}
         {{range .}}
         <tr>
             <td>{{.Time.String}}</td>
@@ -33,9 +66,8 @@
             </td>
         </tr>
         {{end}}
-    </table>
-    {{else}}
-        <p>No requests yet</p>
     {{end}}
+    </tbody>
+    </table>
 </body>
 </html>

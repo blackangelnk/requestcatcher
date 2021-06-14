@@ -3,6 +3,9 @@
 github.com/DATA-DOG/go-sqlmock
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
+# github.com/gorilla/websocket v1.4.2
+## explicit
+github.com/gorilla/websocket
 # github.com/jmoiron/sqlx v1.3.4
 ## explicit
 github.com/jmoiron/sqlx
