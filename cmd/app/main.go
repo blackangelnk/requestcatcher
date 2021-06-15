@@ -15,8 +15,15 @@ import (
 
 func main() {
 	cfg := config.Init()
-
-	s := storage.NewDb(sqlx.MustOpen("sqlite3", ":memory:"))
+	var s storage.Storage
+	switch cfg.StorageType {
+	case config.StorageTypeFile:
+		s = storage.NewDb(sqlx.MustOpen("sqlite3", ":memory:"))
+	case config.StorageTypeDummy:
+		s = storage.NewDummy()
+	default:
+		s = storage.NewMem(cfg.MemStorageConfig)
+	}
 	app := app.NewApp(cfg, s)
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
