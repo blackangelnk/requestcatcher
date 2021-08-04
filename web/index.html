@@ -2,7 +2,12 @@
 <html>
 <head>
 <title>Request catcher</title>
-<link rel="stylesheet" href="https://unpkg.com/chota@latest">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jsonview/1.2.3/jquery.jsonview.min.js" integrity="sha512-ff/E/8AEnLDXnTCyIa+l80evPRNH8q5XnPGY/NgBL645jzHL1ksmXonVMDt7e5D34Y4DTOv+P+9Rmo9jBSSyIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-jsonview/1.2.3/jquery.jsonview.min.css" integrity="sha512-aM9sVC1lVWwuuq38iKbFdk04uGgRyr7ERRnO990jReifKRrYGLugrpLCj27Bfejv6YnAFW2iN3sm6x/jbW7YBg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script>
     function connect() {
         var protocol = "wss://";
@@ -14,14 +19,20 @@
             var request = JSON.parse(event.data);
             var tbodyRef = document.getElementById('requests').getElementsByTagName('tbody')[0];
             var row = tbodyRef.insertRow(0);
-            fields = ["created_at", "url", "method", "body", "content_length", "remote_addr", "headers"];
+            fields = ["created_at", "url", "method", "content_length", "remote_addr", "headers", "body"];
             for (let field of fields) {
                 let cell = row.insertCell();
-                let cellBody
                 if (field == 'headers') {
                     headers = JSON.parse(request[field])
                     for (let key in headers) {
                         cell.innerHTML += '<strong>' + key + '</strong> : ' + headers[key] + "<br>"
+                    }
+                } else if (field == 'body') {
+                    cell.className = "req-body" 
+                    try {
+                        $(cell).JSONView(request[field], {"collapsed": true});
+                    } catch {
+                        cell.appendChild(document.createTextNode(request[field]));
                     }
                 } else {
                     cell.appendChild(document.createTextNode(request[field]));
@@ -32,42 +43,51 @@
     if (window.WebSocket) {
         connect();
     }
+    
+    $(document).ready(function() {
+        $('.req-body').each(function() {
+            try {
+                $(this).JSONView($(this).text(), {"collapsed": true, "strict": false});
+            } catch (e) {}
+        })
+    });
 </script>
 </head>
 <body>
-    <table class="striped" id="requests">
+
+    <table class="ui celled padded table" id="requests">
     <thead>
         <tr>
             <th>Time</th>
             <th>Url</th>
             <th>Method</th>
-            <th>Body</th>
             <th>Content Length</th>
             <th>Remote address</th>
             <th>Headers</th>
+            <th>Body</th>
         </tr>
     </thead>
-    <tbody>
-    {{with .}}
-        {{range .}}
-        <tr>
-            <td>{{.Time.String}}</td>
+        <tbody>
+        {{with .}}
+            {{range .}}
+          <tr>
+            <td class="date">{{.Time.String}}</td>
             <td>{{.Url}}</td>
             <td>{{.Method}} </td>
-            <td>{{.Body}}</td>
             <td>{{.ContentLength}}</td>
             <td>{{.RemoteAddr}}</td>
             <td>
             {{with .ParsedHeaders}}
                 {{ range $key, $values := . }}
-                    <strong>{{$key}}</strong> : {{range $values}} {{.}}  {{end}}<br>
+                    <strong>{{$key | html}}</strong> : {{range $values}} {{. | html}}  {{end}}<br>
                 {{end}}
             {{end}}
             </td>
-        </tr>
+            <td class="req-body">{{.Body | html}}</td>
+          </tr>
+            {{end}}
         {{end}}
-    {{end}}
-    </tbody>
-    </table>
+        </tbody>
+      </table>
 </body>
 </html>

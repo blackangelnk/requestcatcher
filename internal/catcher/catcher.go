@@ -51,7 +51,7 @@ func (c *Catcher) Catch(r *http.Request) (*request.CaughtRequest, error) {
 	}
 	cr := &request.CaughtRequest{
 		Url:           r.URL.String(),
-		Time:          time.Now(),
+		Time:          request.Time(time.Now()),
 		Method:        r.Method,
 		ContentLength: r.ContentLength,
 		RemoteAddr:    r.RemoteAddr,

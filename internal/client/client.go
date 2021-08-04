@@ -48,7 +48,7 @@ func (c *Client) handler(w http.ResponseWriter, r *http.Request) {
 	requests, err := c.Storage.Get()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Print("Failed to select requests from storage", err)
+		log.Print("Failed to get requests from storage", err)
 		return
 	}
 	t, err := template.ParseFiles("../../web/index.html")

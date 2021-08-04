@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	pingPeriod = 30 * time.Second
+	pingPeriod = 55 * time.Second
 	writeWait  = 5 * time.Second
-	pongWait   = 30 * time.Second
+	pongWait   = 60 * time.Second
 	readLimit  = 256
 )
 

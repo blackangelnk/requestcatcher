@@ -40,7 +40,7 @@ func TestGet(t *testing.T) {
 
 	cr := request.CaughtRequest{
 		Id:            1,
-		Time:          time.Now(),
+		Time:          request.Time(time.Now()),
 		Method:        "GET",
 		ContentLength: 0,
 		RemoteAddr:    "127.0.0.1:123",
